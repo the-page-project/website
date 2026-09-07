@@ -2,12 +2,12 @@
    THE PAGE PROJECT — script.js
    Book donation tracking system
 ══════════════════════════════════════════ */
-
+ 
 // ── STORAGE KEY
 const STORAGE_KEY = 'pageproject_donations_v2';
 const GOAL = 10000;
-const BOOKS_ALREADY_COLLECTED = 1644;
-
+const BOOKS_ALREADY_COLLECTED = 802;
+ 
 // ── SAMPLE DRIVES DATA
 const DRIVES = [
   {
@@ -30,33 +30,30 @@ const DRIVES = [
     title: 'Summer Book Drive',
     date: 'July 18, 2026 • 1:00 PM – 4:00 PM',
     location: 'Morgan Spur Dr, Fulshear, TX 77441',
-    books: 550,
-    status: 'past',
+    books: null,
+    status: 'upcoming',
     description: 'Join us in donating books to help expand access to reading for children in our community.'
   },
   {
     title: 'Summer Book Drive',
     date: 'July 25, 2026 • 1:00 PM – 4:00 PM',
     location: 'Morgan Spur Dr, Fulshear, TX 77441',
-    books: 292,
-    status: 'past',
+    books: null,
+    status: 'upcoming',
     description: 'Our second summer collection event. Every donated book helps inspire another young reader.'
   }
 ];
-
+ 
 // ── LOAD / SAVE
 function loadDonations() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
-
 function saveDonations(list) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
-
+ 
 // ── UPDATE ALL UI COUNTERS
 function updateCounters(list) {
   const loggedTotal = list.reduce((sum, donation) => {
@@ -99,133 +96,62 @@ function updateCounters(list) {
     goalBarFill.style.width = `${pct}%`;
   }
 }
-
+ 
 function animateCount(id, target) {
   const el = document.getElementById(id);
   if (!el) return;
-
   const start = parseInt(el.textContent) || 0;
   const diff = target - start;
   const duration = 800;
   const startTime = performance.now();
-
   function step(now) {
     const progress = Math.min((now - startTime) / duration, 1);
     const ease = 1 - Math.pow(1 - progress, 3);
-
     el.textContent = Math.round(start + diff * ease);
-
     if (progress < 1) requestAnimationFrame(step);
   }
-
   requestAnimationFrame(step);
 }
-
+ 
 // ── BOOK GALLERY DATA
 // Replace these placeholder entries with real photos from your drives.
 // src can be any image URL or a local path like 'images/gallery-1.jpg'.
 const GALLERY = [
-  {
-    src: 'https://picsum.photos/seed/pageproject1/600/450',
-    caption: 'Sorting donations from the Fall Book Drive'
-  },
-  {
-    src: 'https://picsum.photos/seed/pageproject2/600/450',
-    caption: 'A box of picture books ready for delivery'
-  },
-  {
-    src: 'https://picsum.photos/seed/pageproject3/600/450',
-    caption: 'Volunteers boxing up middle grade novels'
-  },
-  {
-    src: 'https://picsum.photos/seed/pageproject4/600/450',
-    caption: 'Young Adult titles collected this season'
-  },
-  {
-    src: 'https://picsum.photos/seed/pageproject5/600/450',
-    caption: 'A classroom library restocked with donations'
-  },
-  {
-    src: 'https://picsum.photos/seed/pageproject6/600/450',
-    caption: 'Delivery day at Lincoln Community School'
-  }
+  { src: 'https://picsum.photos/seed/pageproject1/600/450', caption: 'Sorting donations from the Fall Book Drive' },
+  { src: 'https://picsum.photos/seed/pageproject2/600/450', caption: 'A box of picture books ready for delivery' },
+  { src: 'https://picsum.photos/seed/pageproject3/600/450', caption: 'Volunteers boxing up middle grade novels' },
+  { src: 'https://picsum.photos/seed/pageproject4/600/450', caption: 'Young Adult titles collected this season' },
+  { src: 'https://picsum.photos/seed/pageproject5/600/450', caption: 'A classroom library restocked with donations' },
+  { src: 'https://picsum.photos/seed/pageproject6/600/450', caption: 'Delivery day at Lincoln Community School' }
 ];
-
-// ── PARTNER LOGOS
-// Upload logos with your other images, then add their paths and names here.
-// src can be an image URL or a local path, just like GALLERY.
-const PARTNERS = [
-  // { src: 'images/partner-one.png', name: 'Organization One' },
-  // { src: 'images/partner-two.png', name: 'Organization Two' }
-];
-
-function renderPartners() {
-  const grid = document.getElementById('partnersGrid');
-  if (!grid) return;
-
-  grid.replaceChildren();
-
-  if (PARTNERS.length === 0) {
-    const message = document.createElement('p');
-    message.className = 'partners-empty';
-    message.textContent = 'Partner organizations will be featured here soon.';
-    grid.appendChild(message);
-    return;
-  }
-
-  PARTNERS.forEach(partner => {
-    const card = document.createElement('figure');
-    card.className = 'partner-card';
-
-    const logo = document.createElement('img');
-    logo.src = partner.src;
-    logo.alt = partner.name + ' logo';
-    logo.loading = 'lazy';
-
-    logo.addEventListener('error', () => {
-      logo.hidden = true;
-    });
-
-    const caption = document.createElement('figcaption');
-    caption.textContent = partner.name;
-
-    card.append(logo, caption);
-    grid.appendChild(card);
-  });
-}
-
+ 
 // ── RENDER GALLERY
 function renderGallery() {
   const grid = document.getElementById('bookGallery');
   if (!grid) return;
-
+ 
   if (GALLERY.length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🖼️</div>
-        <p>No photos yet.<br>Check back soon!</p>
-      </div>
-    `;
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🖼️</div><p>No photos yet.<br>Check back soon!</p></div>`;
     return;
   }
-
+ 
   grid.innerHTML = GALLERY.map((item, i) => `
     <button type="button" class="gallery-item fade-in" data-idx="${i}">
       <img src="${item.src}" alt="${escHtml(item.caption)}" loading="lazy">
       <span class="gallery-item-caption">${escHtml(item.caption)}</span>
     </button>
   `).join('');
-
+ 
   grid.querySelectorAll('.gallery-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const item = GALLERY[parseInt(btn.dataset.idx)];
       openLightbox(item);
     });
   });
-
+ 
   observeFadeIns();
 }
-
+ 
 // ── LIGHTBOX
 function openLightbox(item) {
   const lb = document.getElementById('galleryLightbox');
@@ -234,73 +160,85 @@ function openLightbox(item) {
   document.getElementById('galleryLightboxCaption').textContent = item.caption;
   lb.classList.add('open');
 }
-
 function closeLightbox() {
-  document.getElementById('galleryLightbox')?.classList.remove('open');
+  document.getElementById('galleryLightbox').classList.remove('open');
 }
-
-document.getElementById('galleryLightboxClose')
-  ?.addEventListener('click', closeLightbox);
-
-document.getElementById('galleryLightbox')
-  ?.addEventListener('click', (e) => {
-    if (e.target.id === 'galleryLightbox') closeLightbox();
-  });
-
+document.getElementById('galleryLightboxClose').addEventListener('click', closeLightbox);
+document.getElementById('galleryLightbox').addEventListener('click', (e) => {
+  if (e.target.id === 'galleryLightbox') closeLightbox();
+});
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeLightbox();
 });
-
+ 
 function escHtml(s) {
   return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
 }
-
 function formatDate(iso) {
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  } catch {
-    return iso;
-  }
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  } catch { return iso; }
 }
-
+ 
 // ── REFRESH ALL
 function refreshAll() {
   const donations = loadDonations();
   updateCounters(donations);
 }
-
+ 
+// ── LOG FORM SUBMIT
+document.getElementById('logBtn').addEventListener('click', () => {
+  const name  = document.getElementById('donorName').value.trim();
+  const books = parseInt(document.getElementById('bookCount').value);
+  const genre = document.getElementById('bookGenre').value;
+  const dest  = document.getElementById('bookDest').value.trim();
+  const note  = document.getElementById('bookNote').value.trim();
+  const msg   = document.getElementById('logMsg');
+ 
+  msg.style.display = 'none';
+ 
+  if (!name) { showMsg(msg, 'Please enter your name.', 'error'); return; }
+  if (!books || books < 1) { showMsg(msg, 'Please enter a valid number of books (minimum 1).', 'error'); return; }
+  if (!genre) { showMsg(msg, 'Please select a genre.', 'error'); return; }
+ 
+  const donation = {
+    name, books, genre, dest, note,
+    date: new Date().toISOString()
+  };
+ 
+  const donations = loadDonations();
+  donations.push(donation);
+  saveDonations(donations);
+  refreshAll();
+ 
+  // Reset form
+  document.getElementById('donorName').value = '';
+  document.getElementById('bookCount').value = '';
+  document.getElementById('bookGenre').value = '';
+  document.getElementById('bookDest').value = '';
+  document.getElementById('bookNote').value = '';
+ 
+  showMsg(msg, `🎉 Thank you, ${name}! ${books} book${books > 1 ? 's' : ''} logged.`, 'success');
+  showToast(`📚 ${books} books logged by ${name}!`, 'success');
+});
+ 
 function showMsg(el, text, type) {
   el.textContent = text;
   el.className = 'log-msg ' + type;
   el.style.display = 'block';
-
-  if (type === 'success') {
-    setTimeout(() => {
-      el.style.display = 'none';
-    }, 4000);
-  }
+  if (type === 'success') setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
-
+ 
 // ── TOAST
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
-  const colors = {
-    success: '#1f6e6e',
-    warning: '#c96f18',
-    error: '#c0392b'
-  };
-
+  const colors = { success: '#1f6e6e', warning: '#c96f18', error: '#c0392b' };
   const toast = document.createElement('div');
-
   toast.style.cssText = `
     background: ${colors[type] || colors.success};
     color: #fff;
@@ -315,22 +253,18 @@ function showToast(message, type = 'success') {
     cursor: pointer;
     max-width: 320px;
   `;
-
   toast.textContent = message;
   container.appendChild(toast);
-
   toast.addEventListener('click', () => toast.remove());
-
   setTimeout(() => {
     toast.style.animation = 'fadeOutRight 0.4s ease forwards';
     setTimeout(() => toast.remove(), 400);
   }, 3500);
 }
-
+ 
 // ── RENDER DRIVES
 function renderDrives() {
   const grid = document.getElementById('drivesGrid');
-
   grid.innerHTML = DRIVES.map(d => `
     <div class="col-md-6 col-lg-3">
       <div class="drive-card fade-in">
@@ -352,10 +286,9 @@ function renderDrives() {
       </div>
     </div>
   `).join('');
-
   observeFadeIns();
 }
-
+ 
 // ── CONTACT FORM
 // Sends via Formspree. Sign up free at https://formspree.io, create a form
 // pointed at official.thepageproject@gmail.com, and replace YOUR_FORM_ID below
@@ -363,12 +296,12 @@ function renderDrives() {
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/YOUR_FORM_ID';
 
 document.getElementById('contactSend').addEventListener('click', async () => {
-  const name = document.getElementById('cName').value.trim();
-  const email = document.getElementById('cEmail').value.trim();
+  const name    = document.getElementById('cName').value.trim();
+  const email   = document.getElementById('cEmail').value.trim();
   const subject = document.getElementById('cSubject').value;
   const message = document.getElementById('cMessage').value.trim();
-  const msg = document.getElementById('contactMsg');
-  const btn = document.getElementById('contactSend');
+  const msg     = document.getElementById('contactMsg');
+  const btn     = document.getElementById('contactSend');
 
   msg.style.display = 'none';
 
@@ -376,7 +309,6 @@ document.getElementById('contactSend').addEventListener('click', async () => {
     showMsg(msg, 'Please fill in your name and email.', 'error');
     return;
   }
-
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     showMsg(msg, 'Please enter a valid email address.', 'error');
     return;
@@ -406,30 +338,22 @@ document.getElementById('contactSend').addEventListener('click', async () => {
       document.getElementById('cEmail').value = '';
       document.getElementById('cMessage').value = '';
     } else {
-      showMsg(
-        msg,
-        'Something went wrong sending your message. Please try emailing us directly.',
-        'error'
-      );
+      showMsg(msg, 'Something went wrong sending your message. Please try emailing us directly.', 'error');
     }
   } catch (err) {
-    showMsg(
-      msg,
-      'Network error — please try emailing us directly at official.thepageproject@gmail.com.',
-      'error'
-    );
+    showMsg(msg, 'Network error — please try emailing us directly at official.thepageproject@gmail.com.', 'error');
   } finally {
     btn.textContent = originalText;
     btn.disabled = false;
   }
 });
-
+ 
 // ── NAVBAR SCROLL EFFECT
 window.addEventListener('scroll', () => {
   const nav = document.getElementById('mainNav');
   nav.classList.toggle('scrolled', window.scrollY > 20);
 });
-
+ 
 // ── INTERSECTION OBSERVER (fade-ins)
 function observeFadeIns() {
   const observer = new IntersectionObserver((entries, obs) => {
@@ -440,15 +364,11 @@ function observeFadeIns() {
       }
     });
   }, { threshold: 0.12 });
-
-  document.querySelectorAll('.fade-in:not(.visible)').forEach(el => {
-    observer.observe(el);
-  });
+  document.querySelectorAll('.fade-in:not(.visible)').forEach(el => observer.observe(el));
 }
-
+ 
 // ── TOAST ANIMATION STYLES
 const style = document.createElement('style');
-
 style.textContent = `
   @keyframes slideIn {
     from { transform: translateX(100px); opacity: 0; }
@@ -458,24 +378,20 @@ style.textContent = `
     to { transform: translateX(120px); opacity: 0; }
   }
 `;
-
 document.head.appendChild(style);
-
+ 
 // ── INIT
 document.addEventListener('DOMContentLoaded', () => {
   renderDrives();
   renderGallery();
-  renderPartners();
   refreshAll();
   observeFadeIns();
-
+ 
   // Hero fade-ins on load
   setTimeout(() => {
-    document.querySelectorAll('.hero .fade-in').forEach(el => {
-      el.classList.add('visible');
-    });
+    document.querySelectorAll('.hero .fade-in').forEach(el => el.classList.add('visible'));
   }, 100);
-
+ 
   // Re-observe on scroll for non-hero elements
   window.addEventListener('scroll', observeFadeIns, { passive: true });
 });
