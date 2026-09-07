@@ -1,13 +1,51 @@
 /* ══════════════════════════════════════════
    THE PAGE PROJECT — script.js
-   Book donation tracking system
+   Team & gallery content management
 ══════════════════════════════════════════ */
- 
-// ── STORAGE KEY
-const STORAGE_KEY = 'pageproject_donations_v2';
-const GOAL = 10000;
-const BOOKS_ALREADY_COLLECTED = 802;
- 
+
+/* ══════════════════════════════════════════
+   FIREBASE SETUP (shared data for all visitors)
+   ──────────────────────────────────────────
+   1. Go to https://console.firebase.google.com → Create a project (free).
+   2. In the project, click "Build" → "Realtime Database" → Create Database
+      → start in "test mode" (we lock it down with rules below).
+   3. Click the gear icon → Project settings → scroll to "Your apps" →
+      click the </> (web) icon → register an app (no hosting needed) →
+      copy the firebaseConfig object it gives you and paste it below,
+      replacing the placeholder values.
+   4. In Realtime Database → Rules, paste this and click Publish:
+        {
+          "rules": {
+            "teamOverrides": { ".read": true, ".write": true },
+            "gallery":       { ".read": true, ".write": true }
+          }
+        }
+      NOTE: like the developer passcode below, this is a practical speed
+      bump, not real security — anyone with the config could technically
+      write bad data. For a nonprofit site this is an acceptable tradeoff
+      for "no backend to maintain." If it's ever abused, tighten the rules
+      (e.g. Firebase App Check, or require sign-in) or add server-side
+      validation via Cloud Functions.
+══════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDCHnN0klihy9zktyuGajRFTJTTf23LZx4",
+  authDomain: "page-project-27c38.firebaseapp.com",
+  databaseURL: "https://page-project-27c38-default-rtdb.firebaseio.com",
+  projectId: "page-project-27c38",
+  storageBucket: "page-project-27c38.firebasestorage.app",
+  messagingSenderId: "47005585431",
+  appId: "1:47005585431:web:84c670d7f73df19ceecc52",
+  measurementId: "G-YRFXYZS1LN"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── STATIC IMPACT NUMBERS
+// These reflect totals from completed book drives. Update these two
+// constants by hand whenever a drive wraps up and you have a new count.
+const BOOKS_ALREADY_COLLECTED = 1000;
+const DONORS_ALREADY_COUNTED = 15;
+
 // ── SAMPLE DRIVES DATA
 const DRIVES = [
   {
@@ -28,76 +66,127 @@ const DRIVES = [
   },
   {
     title: 'Summer Book Drive',
-    date: 'July 18, 2026 • 1:00 PM – 4:00 PM',
+    date: 'July 19, 2026 • 6:30 PM – 8:30 PM',
     location: 'Morgan Spur Dr, Fulshear, TX 77441',
     books: null,
-    status: 'upcoming',
-    description: 'Join us in donating books to help expand access to reading for children in our community.'
+    status: 'past',
+    pending: true,
+    description: 'Thanks to everyone who came out! Final book count is still being tallied — check back soon.'
   },
   {
     title: 'Summer Book Drive',
-    date: 'July 25, 2026 • 1:00 PM – 4:00 PM',
-    location: 'Morgan Spur Dr, Fulshear, TX 77441',
+    date: 'July 25, 2026 • 6:30 PM – 8:30 PM',
+    location: '4344 Cross Creek Bend Ln, Fulshear, TX 77441',
     books: null,
     status: 'upcoming',
+    pending: true,
     description: 'Our second summer collection event. Every donated book helps inspire another young reader.'
   }
 ];
- 
-// ── LOAD / SAVE
-function loadDonations() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch { return []; }
+
+// ── TEAM DATA
+// Default roster (names/roles/groups). Photos and bios are stored in
+// Firebase so any edit made by a developer shows up for every visitor —
+// visitors always see this section; only editing requires the passcode.
+const TEAM = [
+  { id: 'founder-1', name: 'Founder Name', role: 'Founder, President', group: 'Founders', bio: 'Click here to add a short bio.' },
+  { id: 'founder-2', name: 'Founder Name', role: 'Founder, Executive Director', group: 'Founders', bio: 'Click here to add a short bio.' },
+  { id: 'founder-3', name: 'Founder Name', role: 'Founder, Vice President', group: 'Founders', bio: 'Click here to add a short bio.' },
+  { id: 'exec-logistics', name: 'Team Member', role: 'Logistics Director', group: 'Leadership', bio: 'Click here to add a short bio.' },
+  { id: 'exec-outreach', name: 'Team Member', role: 'Outreach Director', group: 'Leadership', bio: 'Click here to add a short bio.' },
+  { id: 'logistics-1', name: 'Team Member', role: 'Logistics Team Member', group: 'Logistics Team', bio: 'Click here to add a short bio.' },
+  { id: 'logistics-2', name: 'Team Member', role: 'Logistics Team Member', group: 'Logistics Team', bio: 'Click here to add a short bio.' },
+  { id: 'outreach-1', name: 'Team Member', role: 'Outreach Team Member', group: 'Outreach Team', bio: 'Click here to add a short bio.' },
+  { id: 'outreach-2', name: 'Team Member', role: 'Outreach Team Member', group: 'Outreach Team', bio: 'Click here to add a short bio.' },
+  { id: 'social-media-officer', name: 'Team Member', role: 'Social Media Coordinator', group: 'Outreach Team', bio: 'Click here to add a short bio.' },
+  { id: 'technology-director', name: 'Team Member', role: 'Webmaster', group: 'Outreach Team', bio: 'Click here to add a short bio.' }
+];
+const TEAM_GROUP_ORDER = ['Founders', 'Leadership', 'Logistics Team', 'Outreach Team'];
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024; // 2MB
+
+// ── DEFAULT GALLERY (fallback / seed content)
+// Shown until a developer adds real photos. The first edit made in
+// Developer Edit Mode moves this content into Firebase permanently, so
+// after that this array is no longer used.
+const DEFAULT_GALLERY = [
+  { src: 'https://picsum.photos/seed/pageproject1/600/450', caption: 'Sorting donations from the Fall Book Drive' },
+  { src: 'https://picsum.photos/seed/pageproject2/600/450', caption: 'A box of picture books ready for delivery' },
+  { src: 'https://picsum.photos/seed/pageproject3/600/450', caption: 'Volunteers boxing up middle grade novels' },
+  { src: 'https://picsum.photos/seed/pageproject4/600/450', caption: 'Young Adult titles collected this season' },
+  { src: 'https://picsum.photos/seed/pageproject5/600/450', caption: 'A classroom library restocked with donations' },
+  { src: 'https://picsum.photos/seed/pageproject6/600/450', caption: 'Delivery day at Lincoln Community School' }
+];
+const MAX_GALLERY_PHOTO_BYTES = 3 * 1024 * 1024; // 3MB
+
+// ── SHARED DEVELOPER EDIT-MODE GATE (governs Team + Gallery editing)
+// This only gates WHO can edit in their own browser session — it does not
+// affect where the data is stored. Since it's a static site, this can't be
+// real authentication; it's a practical speed bump so casual visitors can't
+// edit content, while a developer who knows the passcode can, from any
+// device. One passcode unlocks editing for both the Team and Gallery
+// sections.
+//
+// To change the passcode: open a browser console anywhere and run
+//   crypto.subtle.digest('SHA-256', new TextEncoder().encode('yourNewPasscode'))
+//     .then(buf => console.log([...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('')))
+// then paste the printed hash in as EDIT_PASSCODE_HASH below.
+const EDIT_PASSCODE_HASH = '35cb162995f85b21863f8b94f71d76e665ae29732079216585546c50d4177f08'; // default passcode: PageProject2026!
+const EDIT_SESSION_KEY = 'pageproject_dev_edit_unlocked';
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
-function saveDonations(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+function isDevEditUnlocked() {
+  return sessionStorage.getItem(EDIT_SESSION_KEY) === 'true';
 }
- 
-// ── UPDATE ALL UI COUNTERS
-function updateCounters(list) {
-  const loggedTotal = list.reduce((sum, donation) => {
-    return sum + (Number(donation.books) || 0);
-  }, 0);
-
-  // Total books from completed drives plus newly logged donations
-  const total = BOOKS_ALREADY_COLLECTED + loggedTotal;
-
-  // Count unique donors
-  const donors = new Set(
-    list
-      .map(donation => donation.name?.trim().toLowerCase())
-      .filter(Boolean)
-  ).size;
-
-  // Floating hero counter
-  animateCount('heroCounter', total);
-
-  // Statistics counters
-  animateCount('stat-books', total);
-  animateCount('stat-donors', donors);
-
-  // Progress toward the book goal
-  const pct = Math.min(Math.round((total / GOAL) * 100), 100);
-
-  const goalPct = document.getElementById('goal-pct');
-  const goalBarFill = document.getElementById('goalBarFill');
-  const goalLabel = document.getElementById('goal-label');
-
-  if (goalLabel) {
-    goalLabel.textContent = `${GOAL.toLocaleString()} Book`;
+function setDevEditUnlocked(unlocked) {
+  if (unlocked) sessionStorage.setItem(EDIT_SESSION_KEY, 'true');
+  else sessionStorage.removeItem(EDIT_SESSION_KEY);
+}
+function updateDevEditToggleUI() {
+  const unlocked = isDevEditUnlocked();
+  document.querySelectorAll('.dev-edit-toggle').forEach(btn => {
+    btn.textContent = unlocked ? '🔓' : '🔒';
+    btn.title = unlocked ? 'Edit mode on — click to exit' : 'Developer edit mode';
+    btn.setAttribute('aria-label', btn.title);
+    btn.classList.toggle('unlocked', unlocked);
+  });
+}
+async function toggleDevEditMode() {
+  if (isDevEditUnlocked()) {
+    setDevEditUnlocked(false);
+    updateDevEditToggleUI();
+    renderTeam();
+    renderGallery();
+    showToast('Edit mode turned off.', 'success');
+    return;
   }
 
-  if (goalPct) {
-    goalPct.textContent = `${pct}%`;
-  }
+  const attempt = prompt('Enter the developer passcode to edit team or gallery content:');
+  if (attempt === null) return; // cancelled
 
-  if (goalBarFill) {
-    goalBarFill.style.width = `${pct}%`;
+  const hash = await sha256Hex(attempt);
+  if (hash === EDIT_PASSCODE_HASH) {
+    setDevEditUnlocked(true);
+    updateDevEditToggleUI();
+    renderTeam();
+    renderGallery();
+    showToast('Edit mode enabled for this session.', 'success');
+  } else {
+    showToast('Incorrect passcode.', 'error');
   }
 }
- 
-function animateCount(id, target) {
+document.querySelectorAll('.dev-edit-toggle').forEach(btn => btn.addEventListener('click', toggleDevEditMode));
+
+// ── STATIC IMPACT COUNTERS (hero + stats strip)
+function initStaticCounters() {
+  animateCount('heroCounter', BOOKS_ALREADY_COLLECTED, '+');
+  animateCount('stat-books', BOOKS_ALREADY_COLLECTED, '+');
+  animateCount('stat-donors', DONORS_ALREADY_COUNTED, '+');
+}
+
+function animateCount(id, target, suffix = '') {
   const el = document.getElementById(id);
   if (!el) return;
   const start = parseInt(el.textContent) || 0;
@@ -107,51 +196,183 @@ function animateCount(id, target) {
   function step(now) {
     const progress = Math.min((now - startTime) / duration, 1);
     const ease = 1 - Math.pow(1 - progress, 3);
-    el.textContent = Math.round(start + diff * ease);
+    el.textContent = Math.round(start + diff * ease) + (progress >= 1 ? suffix : '');
     if (progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
 }
- 
-// ── BOOK GALLERY DATA
-// Replace these placeholder entries with real photos from your drives.
-// src can be any image URL or a local path like 'images/gallery-1.jpg'.
-const GALLERY = [
-  { src: 'https://picsum.photos/seed/pageproject1/600/450', caption: 'Sorting donations from the Fall Book Drive' },
-  { src: 'https://picsum.photos/seed/pageproject2/600/450', caption: 'A box of picture books ready for delivery' },
-  { src: 'https://picsum.photos/seed/pageproject3/600/450', caption: 'Volunteers boxing up middle grade novels' },
-  { src: 'https://picsum.photos/seed/pageproject4/600/450', caption: 'Young Adult titles collected this season' },
-  { src: 'https://picsum.photos/seed/pageproject5/600/450', caption: 'A classroom library restocked with donations' },
-  { src: 'https://picsum.photos/seed/pageproject6/600/450', caption: 'Delivery day at Lincoln Community School' }
-];
- 
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ── GALLERY: SHARED, DEVELOPER-EDITABLE (Firebase)
+let galleryCache = null; // null/empty = not yet seeded in Firebase, use defaults
+
+function watchGallery() {
+  db.ref('gallery').on('value', (snap) => {
+    galleryCache = snap.val(); // null if the node is empty
+    renderGallery();
+  }, (err) => console.error('Failed to sync gallery', err));
+}
+
+function galleryEntries() {
+  if (galleryCache && Object.keys(galleryCache).length) {
+    return Object.entries(galleryCache);
+  }
+  return DEFAULT_GALLERY.map((item, i) => [`default-${i}`, item]);
+}
+
+// Moves the fallback defaults into Firebase the first time a developer
+// makes an edit, so the edit targets a real, syncable entry.
+async function ensureGallerySeeded() {
+  if (galleryCache && Object.keys(galleryCache).length) return;
+  const updates = {};
+  DEFAULT_GALLERY.forEach((item) => {
+    const key = db.ref('gallery').push().key;
+    updates[key] = item;
+  });
+  await db.ref('gallery').set(updates);
+}
+
+async function addGalleryPhoto(src, caption) {
+  await ensureGallerySeeded();
+  await db.ref('gallery').push({ src, caption });
+}
+async function updateGalleryItem(key, patch) {
+  await ensureGallerySeeded();
+  await db.ref('gallery/' + key).update(patch);
+}
+async function deleteGalleryItem(key) {
+  await ensureGallerySeeded();
+  await db.ref('gallery/' + key).remove();
+}
+
 // ── RENDER GALLERY
 function renderGallery() {
   const grid = document.getElementById('bookGallery');
   if (!grid) return;
- 
-  if (GALLERY.length === 0) {
+
+  const entries = galleryEntries();
+  const unlocked = isDevEditUnlocked();
+
+  if (entries.length === 0 && !unlocked) {
     grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🖼️</div><p>No photos yet.<br>Check back soon!</p></div>`;
     return;
   }
- 
-  grid.innerHTML = GALLERY.map((item, i) => `
-    <button type="button" class="gallery-item fade-in" data-idx="${i}">
-      <img src="${item.src}" alt="${escHtml(item.caption)}" loading="lazy">
-      <span class="gallery-item-caption">${escHtml(item.caption)}</span>
+
+  const itemsHtml = entries.map(([key, item]) => {
+    if (unlocked) {
+      return `
+        <div class="gallery-item editable fade-in" data-key="${key}">
+          <img src="${item.src}" alt="${escHtml(item.caption)}">
+          <div class="gallery-edit-toolbar">
+            <button type="button" class="gallery-icon-btn gallery-replace-btn" data-key="${key}" title="Replace photo">📷</button>
+            <button type="button" class="gallery-icon-btn gallery-delete-btn" data-key="${key}" title="Remove photo">🗑</button>
+          </div>
+          <input type="file" accept="image/*" class="gallery-photo-input" data-key="${key}" style="display:none">
+          <div class="gallery-item-caption-edit" contenteditable="true" spellcheck="false" data-key="${key}">${escHtml(item.caption)}</div>
+        </div>`;
+    }
+    return `
+      <button type="button" class="gallery-item fade-in" data-key="${key}">
+        <img src="${item.src}" alt="${escHtml(item.caption)}" loading="lazy">
+        <span class="gallery-item-caption">${escHtml(item.caption)}</span>
+      </button>`;
+  }).join('');
+
+  const addTileHtml = unlocked ? `
+    <button type="button" class="gallery-add-tile fade-in" id="galleryAddTile">
+      <span class="gallery-add-icon">➕</span>
+      <span>Add Photo</span>
     </button>
-  `).join('');
- 
-  grid.querySelectorAll('.gallery-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const item = GALLERY[parseInt(btn.dataset.idx)];
-      openLightbox(item);
-    });
-  });
- 
+    <input type="file" accept="image/*" id="galleryAddInput" style="display:none">` : '';
+
+  grid.innerHTML = itemsHtml + addTileHtml;
+
+  attachGalleryHandlers(unlocked);
   observeFadeIns();
 }
- 
+
+function attachGalleryHandlers(unlocked) {
+  if (!unlocked) {
+    document.querySelectorAll('#bookGallery .gallery-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        const entry = galleryEntries().find(([k]) => k === key);
+        if (entry) openLightbox(entry[1]);
+      });
+    });
+    return;
+  }
+
+  // Replace an existing photo
+  document.querySelectorAll('.gallery-replace-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelector(`.gallery-photo-input[data-key="${btn.dataset.key}"]`).click();
+    });
+  });
+  document.querySelectorAll('.gallery-photo-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { showToast('Please choose an image file.', 'error'); return; }
+      if (file.size > MAX_GALLERY_PHOTO_BYTES) { showToast('Please choose an image under 3MB.', 'warning'); return; }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        await updateGalleryItem(input.dataset.key, { src: reader.result });
+        showToast('Photo updated for everyone!', 'success');
+      };
+      reader.onerror = () => showToast('Could not read that image — please try another.', 'error');
+      reader.readAsDataURL(file);
+    });
+  });
+
+  // Delete a photo
+  document.querySelectorAll('.gallery-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this photo for all visitors?')) return;
+      await deleteGalleryItem(btn.dataset.key);
+      showToast('Photo removed.', 'success');
+    });
+  });
+
+  // Edit a caption — save on blur
+  document.querySelectorAll('.gallery-item-caption-edit').forEach(el => {
+    el.addEventListener('blur', async () => {
+      await updateGalleryItem(el.dataset.key, { caption: el.textContent.trim() });
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    });
+  });
+
+  // Add a new photo
+  const addTile = document.getElementById('galleryAddTile');
+  const addInput = document.getElementById('galleryAddInput');
+  if (addTile && addInput) {
+    addTile.addEventListener('click', () => addInput.click());
+    addInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { showToast('Please choose an image file.', 'error'); return; }
+      if (file.size > MAX_GALLERY_PHOTO_BYTES) { showToast('Please choose an image under 3MB.', 'warning'); return; }
+      const caption = prompt('Add a short caption for this photo:', '') || '';
+      const reader = new FileReader();
+      reader.onload = async () => {
+        await addGalleryPhoto(reader.result, caption.trim());
+        showToast('Photo added for everyone!', 'success');
+      };
+      reader.onerror = () => showToast('Could not read that image — please try another.', 'error');
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
 // ── LIGHTBOX
 function openLightbox(item) {
   const lb = document.getElementById('galleryLightbox');
@@ -170,70 +391,153 @@ document.getElementById('galleryLightbox').addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeLightbox();
 });
- 
-function escHtml(s) {
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+
+// ── TEAM: SHARED OVERRIDES (Firebase)
+// Overrides are keyed by team member id and can contain { name, role, bio, photo }.
+// photo is stored as a base64 data URL. Stored in Firebase so every visitor
+// (not just the editing browser) sees the update. Visitors always see the
+// team cards — the passcode only gates the ability to edit them.
+let teamOverridesCache = {};
+
+function watchTeamOverrides() {
+  db.ref('teamOverrides').on('value', (snap) => {
+    teamOverridesCache = snap.val() || {};
+    renderTeam();
+  }, (err) => {
+    console.error('Failed to sync team overrides', err);
+  });
 }
-function formatDate(iso) {
+
+async function saveTeamOverride(id, patch) {
   try {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-  } catch { return iso; }
+    await db.ref('teamOverrides/' + id).update(patch);
+    // No manual re-render needed — watchTeamOverrides() listener will fire.
+  } catch (err) {
+    console.error('Failed to save team override', err);
+    showToast('Could not save — check your connection and try again.', 'error');
+  }
 }
- 
-// ── REFRESH ALL
-function refreshAll() {
-  const donations = loadDonations();
-  updateCounters(donations);
+
+// ── RENDER TEAM
+function renderTeam() {
+  const container = document.getElementById('teamGroups');
+  if (!container) return;
+
+  const overrides = teamOverridesCache;
+  const groups = TEAM_GROUP_ORDER.filter(g => TEAM.some(m => m.group === g));
+
+  container.innerHTML = groups.map(group => `
+    <div class="team-group">
+      <h3 class="team-group-title">${escHtml(group)}</h3>
+      <div class="row g-4 mb-5">
+        ${TEAM.filter(m => m.group === group).map(m => renderTeamCard(m, overrides[m.id] || {})).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  attachTeamHandlers();
+  observeFadeIns();
 }
- 
-// ── LOG FORM SUBMIT
-document.getElementById('logBtn').addEventListener('click', () => {
-  const name  = document.getElementById('donorName').value.trim();
-  const books = parseInt(document.getElementById('bookCount').value);
-  const genre = document.getElementById('bookGenre').value;
-  const dest  = document.getElementById('bookDest').value.trim();
-  const note  = document.getElementById('bookNote').value.trim();
-  const msg   = document.getElementById('logMsg');
- 
-  msg.style.display = 'none';
- 
-  if (!name) { showMsg(msg, 'Please enter your name.', 'error'); return; }
-  if (!books || books < 1) { showMsg(msg, 'Please enter a valid number of books (minimum 1).', 'error'); return; }
-  if (!genre) { showMsg(msg, 'Please select a genre.', 'error'); return; }
- 
-  const donation = {
-    name, books, genre, dest, note,
-    date: new Date().toISOString()
-  };
- 
-  const donations = loadDonations();
-  donations.push(donation);
-  saveDonations(donations);
-  refreshAll();
- 
-  // Reset form
-  document.getElementById('donorName').value = '';
-  document.getElementById('bookCount').value = '';
-  document.getElementById('bookGenre').value = '';
-  document.getElementById('bookDest').value = '';
-  document.getElementById('bookNote').value = '';
- 
-  showMsg(msg, `🎉 Thank you, ${name}! ${books} book${books > 1 ? 's' : ''} logged.`, 'success');
-  showToast(`📚 ${books} books logged by ${name}!`, 'success');
-});
- 
-function showMsg(el, text, type) {
-  el.textContent = text;
-  el.className = 'log-msg ' + type;
-  el.style.display = 'block';
-  if (type === 'success') setTimeout(() => { el.style.display = 'none'; }, 4000);
+
+function renderTeamCard(member, data) {
+  const name = data.name || member.name;
+  const bio = data.bio || member.bio;
+  const photo = data.photo || '';
+  const unlocked = isDevEditUnlocked();
+  const lockedClass = unlocked ? '' : ' locked';
+  const overlayText = unlocked ? '📷 Click to upload photo' : '🔒';
+
+  return `
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <div class="team-card fade-in">
+        <div class="team-photo-wrap${lockedClass}" data-id="${member.id}" tabindex="0" role="button"
+             aria-label="${unlocked ? `Upload a photo for ${escHtml(name)}` : 'Photo editing is limited to developers'}">
+          ${photo
+            ? `<img src="${photo}" alt="${escHtml(name)}" class="team-photo">`
+            : `<div class="team-photo-placeholder">🧑‍🤝‍🧑</div>`}
+          <div class="team-photo-overlay">${overlayText}</div>
+          <input type="file" accept="image/*" class="team-photo-input" data-id="${member.id}">
+        </div>
+        <div class="team-card-body">
+          <div class="team-name${lockedClass}" contenteditable="${unlocked}" spellcheck="false"
+               data-id="${member.id}" data-field="name">${escHtml(name)}</div>
+          <div class="team-role">${escHtml(member.role)}</div>
+          <div class="team-bio${lockedClass}" contenteditable="${unlocked}" spellcheck="false"
+               data-id="${member.id}" data-field="bio">${escHtml(bio)}</div>
+        </div>
+      </div>
+    </div>
+  `;
 }
- 
+
+function attachTeamHandlers() {
+  const unlocked = isDevEditUnlocked();
+
+  // Click (or keyboard-activate) a photo to open the file picker
+  document.querySelectorAll('.team-photo-wrap').forEach(wrap => {
+    const input = wrap.querySelector('.team-photo-input');
+    wrap.addEventListener('click', () => {
+      if (!unlocked) {
+        showToast('Photo and bio editing is limited to developers.', 'warning');
+        return;
+      }
+      input.click();
+    });
+    wrap.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        wrap.click();
+      }
+    });
+  });
+
+  if (!unlocked) return; // nothing else to wire up while locked
+
+  document.querySelectorAll('.team-photo-input').forEach(input => {
+    input.addEventListener('click', (e) => e.stopPropagation());
+    input.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast('Please choose an image file.', 'error');
+        return;
+      }
+      if (file.size > MAX_PHOTO_BYTES) {
+        showToast('Please choose an image under 2MB.', 'warning');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const id = input.dataset.id;
+        showToast('Uploading photo…', 'success');
+        await saveTeamOverride(id, { photo: reader.result });
+        showToast('Photo updated for everyone!', 'success');
+      };
+      reader.onerror = () => showToast('Could not read that image — please try another.', 'error');
+      reader.readAsDataURL(file);
+    });
+  });
+
+  // Editable name / bio fields — save on blur
+  document.querySelectorAll('.team-name, .team-bio').forEach(el => {
+    el.addEventListener('blur', async () => {
+      const id = el.dataset.id;
+      const field = el.dataset.field;
+      const value = el.textContent.trim();
+      await saveTeamOverride(id, { [field]: value });
+    });
+    // Single-line fields (name) shouldn't allow line breaks
+    if (el.dataset.field === 'name') {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          el.blur();
+        }
+      });
+    }
+  });
+}
+
 // ── TOAST
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
@@ -261,7 +565,13 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.remove(), 400);
   }, 3500);
 }
- 
+function showMsg(el, text, type) {
+  el.textContent = text;
+  el.className = 'log-msg ' + type;
+  el.style.display = 'block';
+  if (type === 'success') setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
 // ── RENDER DRIVES
 function renderDrives() {
   const grid = document.getElementById('drivesGrid');
@@ -281,79 +591,27 @@ function renderDrives() {
             <div style="margin-top:16px">
               <div class="drive-books">${d.books.toLocaleString()}</div>
               <div class="drive-books-label">books collected</div>
-            </div>` : ''}
+            </div>` : (d.pending ? `
+            <div style="margin-top:16px">
+              <div class="drive-books drive-books-pending">Pending</div>
+              <div class="drive-books-label">final count coming soon</div>
+            </div>` : '')}
         </div>
       </div>
     </div>
   `).join('');
   observeFadeIns();
 }
- 
+
 // ── CONTACT FORM
-// Sends via Formspree. Sign up free at https://formspree.io, create a form
-// pointed at official.thepageproject@gmail.com, and replace YOUR_FORM_ID below
-// with the endpoint ID Formspree gives you (e.g. "abc1234").
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/YOUR_FORM_ID';
+// The HTML form submits through FormSubmit, so no JavaScript handler is needed.
 
-document.getElementById('contactSend').addEventListener('click', async () => {
-  const name    = document.getElementById('cName').value.trim();
-  const email   = document.getElementById('cEmail').value.trim();
-  const subject = document.getElementById('cSubject').value;
-  const message = document.getElementById('cMessage').value.trim();
-  const msg     = document.getElementById('contactMsg');
-  const btn     = document.getElementById('contactSend');
-
-  msg.style.display = 'none';
-
-  if (!name || !email) {
-    showMsg(msg, 'Please fill in your name and email.', 'error');
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showMsg(msg, 'Please enter a valid email address.', 'error');
-    return;
-  }
-
-  const originalText = btn.textContent;
-  btn.textContent = 'Sending…';
-  btn.disabled = true;
-
-  try {
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('email', email);
-    formData.append('subject', subject);
-    formData.append('message', message);
-
-    const response = await fetch(FORMSPREE_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: formData
-    });
-
-    if (response.ok) {
-      showMsg(msg, `✉️ Thanks, ${name}! We'll be in touch soon.`, 'success');
-      showToast(`✉️ Message sent!`, 'success');
-      document.getElementById('cName').value = '';
-      document.getElementById('cEmail').value = '';
-      document.getElementById('cMessage').value = '';
-    } else {
-      showMsg(msg, 'Something went wrong sending your message. Please try emailing us directly.', 'error');
-    }
-  } catch (err) {
-    showMsg(msg, 'Network error — please try emailing us directly at official.thepageproject@gmail.com.', 'error');
-  } finally {
-    btn.textContent = originalText;
-    btn.disabled = false;
-  }
-});
- 
 // ── NAVBAR SCROLL EFFECT
 window.addEventListener('scroll', () => {
   const nav = document.getElementById('mainNav');
   nav.classList.toggle('scrolled', window.scrollY > 20);
 });
- 
+
 // ── INTERSECTION OBSERVER (fade-ins)
 function observeFadeIns() {
   const observer = new IntersectionObserver((entries, obs) => {
@@ -366,7 +624,7 @@ function observeFadeIns() {
   }, { threshold: 0.12 });
   document.querySelectorAll('.fade-in:not(.visible)').forEach(el => observer.observe(el));
 }
- 
+
 // ── TOAST ANIMATION STYLES
 const style = document.createElement('style');
 style.textContent = `
@@ -379,19 +637,28 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
- 
+
 // ── INIT
 document.addEventListener('DOMContentLoaded', () => {
   renderDrives();
+  updateDevEditToggleUI();
+
+  // Show Team and Gallery immediately to every visitor.
+  renderTeam();
   renderGallery();
-  refreshAll();
+
+  // Firebase then loads and applies the newest shared edits.
+  watchTeamOverrides();
+  watchGallery();
+
+  initStaticCounters();
   observeFadeIns();
- 
+
   // Hero fade-ins on load
   setTimeout(() => {
     document.querySelectorAll('.hero .fade-in').forEach(el => el.classList.add('visible'));
   }, 100);
- 
+
   // Re-observe on scroll for non-hero elements
   window.addEventListener('scroll', observeFadeIns, { passive: true });
 });
