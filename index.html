@@ -25,11 +25,12 @@
       <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
         <li class="nav-item"><a class="nav-link" href="#mission">Mission</a></li>
         <li class="nav-item"><a class="nav-link" href="#impact">Impact</a></li>
-        <li class="nav-item"><a class="nav-link" href="#tracker">Book Tracker</a></li>
+        <li class="nav-item"><a class="nav-link" href="#gallery">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#drives">Book Drives</a></li>
+        <li class="nav-item"><a class="nav-link" href="#team">Team</a></li>
         <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
         <li class="nav-item ms-lg-3">
-          <a class="nav-link btn-donate" href="#tracker">Donate Books</a>
+          <a class="nav-link btn-donate" href="#drives">Donate Books</a>
         </li>
       </ul>
     </div>
@@ -54,7 +55,7 @@
           The Page Project collects and donates books to underserved communities, putting the power of reading into the hands of every child — one page at a time.
         </p>
         <div class="hero-actions fade-in delay-3">
-          <a href="#tracker" class="btn btn-primary-custom">Log a Donation</a>
+          <a href="#drives" class="btn btn-primary-custom">🗓 See Our Drives</a>
           <a href="#mission" class="btn btn-ghost-custom">Our Mission →</a>
         </div>
       </div>
@@ -69,7 +70,7 @@
             <div class="book b6"></div>
           </div>
           <div class="counter-badge">
-            <span class="counter-number" id="heroCounter">802</span>
+            <span class="counter-number" id="heroCounter">1000+</span>
             <span class="counter-label">Books Donated</span>
           </div>
         </div>
@@ -83,11 +84,11 @@
   <div class="container">
     <div class="row g-0 text-center">
       <div class="col-6 col-md-3 stat-cell">
-        <div class="stat-number" id="stat-books">802</div>
+        <div class="stat-number" id="stat-books">1000+</div>
         <div class="stat-label">Books Donated</div>
       </div>
       <div class="col-6 col-md-3 stat-cell">
-        <div class="stat-number" id="stat-drives">4</div>
+        <div class="stat-number" id="stat-drives">3</div>
         <div class="stat-label">Book Drives Held</div>
       </div>
       <div class="col-6 col-md-3 stat-cell">
@@ -95,7 +96,7 @@
         <div class="stat-label">Communities Reached</div>
       </div>
       <div class="col-6 col-md-3 stat-cell">
-        <div class="stat-number" id="stat-donors">10+</div>
+        <div class="stat-number" id="stat-donors">15+</div>
         <div class="stat-label">Donors</div>
       </div>
     </div>
@@ -175,136 +176,48 @@
     <div class="row g-4">
       <div class="col-md-4">
         <div class="impact-card fade-in">
-          <div class="impact-quote">"Getting a book of my own was the happiest day of my year. I read it three times."</div>
-          <div class="impact-attr">— Student, Eastside Elementary</div>
+          <div class="impact-quote">"A reader lives a thousand lives before he dies. The man who never reads lives only one."</div>
+<div class="impact-attr">— George R. R. Martin</div>
         </div>
       </div>
       <div class="col-md-4">
         <div class="impact-card ic-highlight fade-in delay-1">
           <div class="impact-number">500+</div>
-          <div class="impact-desc">Books donated in our biggest single drive, reaching 3 schools in one weekend.</div>
+          <div class="impact-desc">Books donated in our biggest single drive, reaching multiple communities in one weekend.</div>
         </div>
       </div>
       <div class="col-md-4">
         <div class="impact-card fade-in delay-2">
-          <div class="impact-quote">"The Page Project restocked our entire classroom library. Our students finally have books to take home."</div>
-          <div class="impact-attr">— Teacher, Lincoln Community School</div>
+          <div class="impact-quote">"Once you learn to read, you will be forever free."</div>
+<div class="impact-attr">— Frederick Douglass</div>
         </div>
       </div>
     </div>
   </div>
 </section>
- 
-<!-- BOOK TRACKER -->
-<section class="section-tracker" id="tracker">
+
+<!-- GALLERY -->
+<section class="section-gallery" id="gallery">
   <div class="container">
     <div class="text-center mb-5">
-      <div class="section-tag">Donation Tracker</div>
-      <h2 class="section-title">Log &amp; Track<br><em>Every Book</em></h2>
+      <div class="section-tag">Gallery</div>
+      <h2 class="section-title">Moments From<br><em>Our Drives</em></h2>
       <p class="section-body mx-auto" style="max-width:520px">
-        Log your book donation below. Every entry is saved and counted toward our community total. Together we can see the full story of our impact.
+        A few snapshots from past book drives and deliveries. Click any photo for a closer look.
       </p>
+      <button type="button" class="dev-edit-toggle" id="galleryEditToggle" aria-label="Developer edit mode" title="Developer edit mode">🔒</button>
     </div>
- 
-    <!-- Progress Bar -->
-    <div class="goal-bar-wrap mb-5">
-      <div class="goal-bar-header">
-        <span>Progress toward <strong id="goal-label">1,000 Book</strong> goal</span>
-        <span id="goal-pct">0%</span>
-      </div>
-      <div class="goal-bar-track">
-        <div class="goal-bar-fill" id="goalBarFill"></div>
-      </div>
-    </div>
- 
-    <div class="row g-4">
-      <!-- LOG FORM -->
-      <div class="col-lg-5">
-        <div class="tracker-form-card">
-          <h4 class="tracker-form-title">📬 Log a Donation</h4>
-          <div class="mb-3">
-            <label class="form-label">Your Name</label>
-            <input type="text" class="form-control custom-input" id="donorName" placeholder="e.g. Jane Smith">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Number of Books</label>
-            <input type="number" class="form-control custom-input" id="bookCount" min="1" placeholder="e.g. 10">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Genre / Category</label>
-            <select class="form-select custom-input" id="bookGenre">
-              <option value="">— Select genre —</option>
-              <option>Picture Books</option>
-              <option>Early Readers</option>
-              <option>Middle Grade</option>
-              <option>Young Adult</option>
-              <option>Non-Fiction</option>
-              <option>Science &amp; Nature</option>
-              <option>Biography</option>
-              <option>Mixed / General</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Destination Community <span class="text-muted">(optional)</span></label>
-            <input type="text" class="form-control custom-input" id="bookDest" placeholder="e.g. Northside Library">
-          </div>
-          <div class="mb-4">
-            <label class="form-label">Note <span class="text-muted">(optional)</span></label>
-            <textarea class="form-control custom-input" id="bookNote" rows="2" placeholder="Any message or dedication..."></textarea>
-          </div>
-          <button class="btn btn-primary-custom w-100" id="logBtn">Log Donation →</button>
-          <div id="logMsg" class="log-msg mt-3" style="display:none"></div>
-        </div>
-      </div>
- 
-      <!-- DONATION LOG TABLE -->
-      <div class="col-lg-7">
-        <div class="tracker-log-card">
-          <div class="tracker-log-header">
-            <h4 class="tracker-log-title">📋 Donation Log</h4>
-            <div class="tracker-log-controls">
-              <input type="text" class="form-control custom-input search-small" id="logSearch" placeholder="Search…">
-              <select class="form-select custom-input search-small" id="logFilter">
-                <option value="">All Genres</option>
-                <option>Picture Books</option>
-                <option>Early Readers</option>
-                <option>Middle Grade</option>
-                <option>Young Adult</option>
-                <option>Non-Fiction</option>
-                <option>Science &amp; Nature</option>
-                <option>Biography</option>
-                <option>Mixed / General</option>
-              </select>
-            </div>
-          </div>
-          <div class="tracker-table-wrap">
-            <table class="tracker-table" id="donationTable">
-              <thead>
-                <tr>
-                  <th>Donor</th>
-                  <th>Books</th>
-                  <th>Genre</th>
-                  <th>Destination</th>
-                  <th>Date</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="donationBody"></tbody>
-            </table>
-            <div id="emptyState" class="empty-state">
-              <div class="empty-icon">📭</div>
-              <p>No donations logged yet.<br>Be the first!</p>
-            </div>
-          </div>
-          <div class="tracker-totals" id="trackerTotals">
-            <span>Showing <strong id="rowCount">0</strong> donations</span>
-            <span>Total: <strong id="totalCount">0</strong> books</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="gallery-grid" id="bookGallery"></div>
   </div>
 </section>
+
+<div class="gallery-lightbox" id="galleryLightbox">
+  <button type="button" class="gallery-lightbox-close" id="galleryLightboxClose" aria-label="Close">&times;</button>
+  <div class="gallery-lightbox-content">
+    <img id="galleryLightboxImg" src="" alt="">
+    <p id="galleryLightboxCaption" class="gallery-lightbox-caption"></p>
+  </div>
+</div>
  
 <!-- BOOK DRIVES -->
 <section class="section-drives" id="drives">
@@ -314,6 +227,18 @@
       <h2 class="section-title">Book Drive<br><em>Events</em></h2>
     </div>
     <div class="row g-4" id="drivesGrid"></div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section class="section-team" id="team">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="section-tag">Meet the Team</div>
+      <h2 class="section-title">The People Behind<br><em>The Pages</em></h2>
+      <button type="button" class="dev-edit-toggle" id="teamEditToggle" aria-label="Developer edit mode" title="Developer edit mode">🔒</button>
+    </div>
+    <div id="teamGroups"></div>
   </div>
 </section>
  
@@ -340,29 +265,88 @@
       <div class="col-lg-7">
         <div class="contact-form-card">
           <h4 class="mb-4" style="font-family:'Playfair Display',serif">Send us a message</h4>
-          <div class="row g-3">
+
+          <form
+            class="row g-3"
+            action="https://formsubmit.co/official.thepageproject@gmail.com"
+            method="POST"
+          >
             <div class="col-sm-6">
-              <input type="text" class="form-control custom-input" id="cName" placeholder="Your name">
+              <input
+                type="text"
+                class="form-control custom-input"
+                id="cName"
+                name="name"
+                placeholder="Your name"
+                required
+              >
             </div>
+
             <div class="col-sm-6">
-              <input type="email" class="form-control custom-input" id="cEmail" placeholder="Email address">
+              <input
+                type="email"
+                class="form-control custom-input"
+                id="cEmail"
+                name="email"
+                placeholder="Email address"
+                required
+              >
             </div>
+
             <div class="col-12">
-              <select class="form-select custom-input" id="cSubject">
-                <option>I want to volunteer</option>
-                <option>I want to donate books</option>
-                <option>I want to partner with you</option>
-                <option>Other inquiry</option>
+              <select
+                class="form-select custom-input"
+                id="cSubject"
+                name="inquiry_type"
+                required
+              >
+                <option value="I want to volunteer">I want to volunteer</option>
+                <option value="I want to donate books">I want to donate books</option>
+                <option value="I want to partner with you">I want to partner with you</option>
+                <option value="Other inquiry">Other inquiry</option>
               </select>
             </div>
+
             <div class="col-12">
-              <textarea class="form-control custom-input" id="cMessage" rows="4" placeholder="Tell us more…"></textarea>
+              <textarea
+                class="form-control custom-input"
+                id="cMessage"
+                name="message"
+                rows="4"
+                placeholder="Tell us more…"
+                required
+              ></textarea>
             </div>
+
+            <input
+              type="hidden"
+              name="_subject"
+              value="New message from The Page Project website"
+            >
+            <input
+  type="hidden"
+  name="_next"
+  value="https://lolsnow12.github.io/starter-page-project/#contact"
+>
+            <input
+  type="hidden"
+  name="_url"
+  value="https://lolsnow12.github.io/starter-page-project/"
+>
+            <input type="hidden" name="_template" value="table">
+            <input type="hidden" name="_captcha" value="true">
+            <input type="text" name="_honey" style="display:none">
+
             <div class="col-12">
-              <button class="btn btn-primary-custom w-100" id="contactSend">Send Message →</button>
-              <div id="contactMsg" class="log-msg mt-2" style="display:none"></div>
+              <button
+                type="submit"
+                class="btn btn-primary-custom w-100"
+                id="contactSend"
+              >
+                Send Message →
+              </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>
@@ -385,17 +369,16 @@
         <ul class="footer-links">
           <li><a href="#mission">Our Mission</a></li>
           <li><a href="#impact">Impact</a></li>
-          <li><a href="#tracker">Book Tracker</a></li>
+          <li><a href="#gallery">Gallery</a></li>
           <li><a href="#drives">Book Drives</a></li>
+          <li><a href="#team">Team</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
       </div>
       <div class="col-md-4">
         <h6 class="footer-heading">Follow Along</h6>
         <div class="footer-socials">
-          <a href="#" class="social-pill">Instagram</a>
-          <a href="#" class="social-pill">Twitter</a>
-          <a href="#" class="social-pill">Facebook</a>
+          <a href="https://instagram.com/the.page.project" target="_blank" class="social-pill">Instagram</a>
         </div>
       </div>
     </div>
@@ -407,6 +390,9 @@
  
 <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index:1100"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Firebase (shared/live data: team photos & bios, gallery photos) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
